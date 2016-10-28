@@ -1,0 +1,1 @@
+Sensors: Arduino sketches based on mysensors 2.0 library, auto id 
