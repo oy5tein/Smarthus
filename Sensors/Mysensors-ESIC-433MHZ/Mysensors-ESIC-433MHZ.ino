@@ -23,18 +23,6 @@
 
 
 //#define DEBUG 0 //prints additional information to serial port
-#define HOUSECODE 2
-
-/*
-MyMessage msgHum1(10, V_HUM);
-MyMessage msgTemp1(11, V_TEMP);
-MyMessage msgHum2(20, V_HUM);
-MyMessage msgTemp2(21, V_TEMP);
-MyMessage msgHum3(30, V_HUM);
-MyMessage msgTemp3(31, V_TEMP);
-MyMessage msgHum4(40, V_HUM);
-MyMessage msgTemp4(41, V_TEMP);
-*/
 
 MyMessage msgHum(0, V_HUM);
 MyMessage msgTemp(1, V_TEMP);
@@ -230,9 +218,8 @@ void setup()
   present(40, S_HUM);
   wait(1000);
   present(41, S_TEMP);
-
-  metric = getConfig().isMetric;
 */
+
 
 // Serial.println("Wireless Temperature & Humidity Sensors to Serial");
 //  Serial.println("Dir --> Wireless_Temp_Serial8");
@@ -303,11 +290,12 @@ void loop()
 
       if (c==0){
         /*channel 0 is labeled 4 on sensor*/
-        unsigned int childIdHum = n*10 + (4+4);
-        unsigned int childIdTemp = n*10 + 4;    
+
+        childIdHum = n*10 + (4+4);
+        childIdTemp = n*10 + 4;    
       }else{
-        unsigned int childIdHum = n*10 + (c+4) ;   
-        unsigned int childIdTemp = n*10 + c;
+        childIdHum = n*10 + (c+4) ;   
+        childIdTemp = n*10 + c;
       }
 
      if (measurement[n][c].presented == 0){
@@ -325,7 +313,7 @@ void loop()
         wait(500);
 
         /*Now this network channel has been presented*/
-       // measurement[n][c].presented = true;
+        //measurement[n][c].presented = true;
 
       }
 
@@ -342,10 +330,13 @@ void loop()
       Serial.print(" Value: ");
       Serial.print(rh);
       Serial.println("[%]");
+
+      MyMessage msgTemp(childIdTemp, V_TEMP);
       
-      msgTemp.setType(V_TEMP);
-      msgTemp.setSensor(childIdTemp);
+//      msgTemp.setType(V_TEMP);
+//      msgTemp.setSensor(childIdTemp);
       send(msgTemp.set(temp, 1));
+      wait(500);
 
 
       Serial.print("Data for childid: ");
@@ -354,10 +345,12 @@ void loop()
       Serial.print(temp);
       Serial.println("[C]");
       
-      msgHum.setType(V_HUM);
-      msgTemp.setSensor(childIdHum);
-      msgHum.set(rh, 1);
-      send(msgHum);
+      MyMessage msgHum(childIdHum, V_HUM);
+
+//      msgHum.setType(V_HUM);
+//      msgTemp.setSensor(childIdHum);
+      send(msgHum.set(rh, 1));
+      wait(500);
 
 /*     
      switch (c)

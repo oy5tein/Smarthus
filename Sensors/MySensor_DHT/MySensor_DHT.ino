@@ -1,3 +1,6 @@
+/*DHT lib in arduino version 1.3.0 is broken, select 1.2.3 */
+#include <DHT.h>
+
 
 /**
  * The MySensors Arduino library handles the wireless radio link and protocol
@@ -27,8 +30,6 @@
  * http://www.mysensors.org/build/light
  */
 
-
-#include "DHT.h"
 
 #define DHTPIN 3     // what digital pin we're connected to
 
@@ -86,7 +87,7 @@ void presentation()  {
 void loop()      
 { 
     // Wait a few seconds between measurements.
-  wait(2000);
+  wait(30000);
 
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
