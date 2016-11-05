@@ -18,6 +18,9 @@
 //#define MY_RADIO_RFM69
 
 
+#define LED_TRASMIT_TO_GW 8
+
+
 #include <SPI.h>
 #include <MySensors.h>
 
@@ -34,7 +37,7 @@ MyMessage msgTemp(1, V_TEMP);
 #define VARIATION 500
 #define DATA_LENGTH 5
 #define SENSOR_COUNT 5
-#define NETWORK_COUNT 8
+#define HOUSECODE_COUNT 16
 #define MSGLENGTH 36
 #define DELAY_BETWEEN_POSTS 200  
 
@@ -46,7 +49,7 @@ struct sensor {
   unsigned char presented;
 };
 
-struct sensor measurement[NETWORK_COUNT+1][SENSOR_COUNT+1];
+struct sensor measurement[HOUSECODE_COUNT+1][SENSOR_COUNT+1];
 
 unsigned long time;
 unsigned char bitcount = 0;
@@ -149,29 +152,8 @@ void receive()
        Serial.println("");
        
 
-         
-// CSV data out to serial host an alternative to the above
-
-//       Serial.print("ESIC,");               // The name on the front
-//       net = 0x0F & (data[1]>>4);           // the -1 in original code removed
-//                                            // 0x07 --> 0x0F to permit NET up to 15 tobe decodeed instead of 7
-//       Serial.print(net,DEC);               // Housecode is 1 to 15
-//       Serial.print(",");                  
-//       id = 0x03 & (data[1]>>2)+1;
-//       Serial.print(id, DEC);               // Channel is 1 to 4, this and above changed so serial.print agrees with lcd displays
-//       Serial.print(",");                
-//       rh = data[2];
-//       Serial.print(rh, DEC);               // Only WT450H has a Humidity sensor, WT450 is just Temperature
-//       Serial.print(",");
-//       t_int = data[3]-50;
-//       Serial.print(t_int, DEC);
-//       t_dec = data[4]>>1;
-//       Serial.print('.');
-//       Serial.print(t_dec,DEC);
-//       Serial.println("");
-
-         
-       if ( net < NETWORK_COUNT )
+        
+       if ( net < HOUSECODE_COUNT )
        {
          measurement[net][id].temp_int = t_int;
          measurement[net][id].temp_dec = t_dec;
@@ -195,37 +177,15 @@ reset: // set all the receiver variables back to zero
 void setup()
 {
   int k,l; 
-//  Serial.begin(115200);
- pinMode(LED_BUILTIN, OUTPUT);
+
+ pinMode(LED_TRASMIT_TO_GW, OUTPUT);
  
   // Send the Sketch Version Information to the Gateway
   sendSketchInfo("Humidity/Temperature", "3.0");
-  
-  // Register all sensors to gw (they will be created as child devices)
-/*
-  present(10, S_HUM);
-  wait(1000);
-  present(11, S_TEMP);
-  wait(1000);
-  present(20, S_HUM);
-  wait(1000);
-  present(21, S_TEMP);
-  wait(1000);
-  present(30, S_HUM);
-  wait(1000);
-  present(31, S_TEMP);
-  wait(1000);
-  present(40, S_HUM);
-  wait(1000);
-  present(41, S_TEMP);
-*/
+  /*dont present measurement here, its done runtime when new sensors are received*/
 
 
-// Serial.println("Wireless Temperature & Humidity Sensors to Serial");
-//  Serial.println("Dir --> Wireless_Temp_Serial8");
-
- 
-  for (l=0; l<NETWORK_COUNT; l++)    // the 'network' here is the wireless sensor network
+  for (l=0; l<HOUSECODE_COUNT; l++)    // the 'network' here is the wireless sensor network
   {
     for (k=0; k<SENSOR_COUNT; k++)
     {
@@ -240,7 +200,6 @@ void setup()
 //  Serial.println("Initialise interrupt");
   attachInterrupt(1,receive,CHANGE); // interrupt 0 is pin D2 1 is pin D3 
                                      // needs to be 1 for an ENC28J60 ethernet shield
-  
   time = micros();
  lastPostTimestamp = currentTime;
 //  Serial.println("Setup complete - Waiting for data");
@@ -259,7 +218,6 @@ boolean newDataReceived(const unsigned int n, const unsigned int c)
 
 
 
-
 void loop()
 {
   currentTime = millis();
@@ -268,11 +226,11 @@ void loop()
   if(difftime > DELAY_BETWEEN_POSTS){   
     lastPostTimestamp = currentTime;
 
-    digitalWrite(13, LOW);  
+    digitalWrite(LED_TRASMIT_TO_GW, LOW);  
    
-   //int n = 2;     
-   for (int n=0; n<NETWORK_COUNT; n++){    // the 'network' here is the wireless sensor network
-    for (int c=0; c<SENSOR_COUNT; c++){
+        
+   for (int n=0; n<HOUSECODE_COUNT; n++){    // n is the 433MHz housecode "network"
+    for (int c=0; c<SENSOR_COUNT; c++){      
      if ( (true == newDataReceived(n,c)) ){
 
        
@@ -317,7 +275,8 @@ void loop()
 
       }
 
-
+     /*indicate new trasmitted */
+     digitalWrite(LED_TRASMIT_TO_GW, HIGH);  
 
      float temp= (float) measurement[n][c].temp_dec * 0.1f;
      temp = temp + measurement[n][c].temp_int;
@@ -332,9 +291,6 @@ void loop()
       Serial.println("[%]");
 
       MyMessage msgTemp(childIdTemp, V_TEMP);
-      
-//      msgTemp.setType(V_TEMP);
-//      msgTemp.setSensor(childIdTemp);
       send(msgTemp.set(temp, 1));
       wait(500);
 
@@ -346,39 +302,11 @@ void loop()
       Serial.println("[C]");
       
       MyMessage msgHum(childIdHum, V_HUM);
-
-//      msgHum.setType(V_HUM);
-//      msgTemp.setSensor(childIdHum);
       send(msgHum.set(rh, 1));
       wait(500);
 
-/*     
-     switch (c)
-     {
-       case 1:
-         send(msgTemp.set(temp, 1));
-         wait(2000);
-         send(msgHum.set(rh, 1));
-         break;       
-       case 2:
-         send(msgTemp.set(temp, 1));
-         wait(2000);
-         send(msgHum.set(rh, 1));
-         break;       
-       case 3:
-         send(msgTemp.set(temp, 1));
-         wait(2000);
-         send(msgHum.set(rh, 1));
-         break;       
-       case 0:
-         send(msgTemp.set(temp, 1));
-         wait(2000);
-         send(msgHum.set(rh, 1));
-         break;
+      digitalWrite(LED_TRASMIT_TO_GW, LOW);
 
-       
-     }
-*/
      }
 
    }}
